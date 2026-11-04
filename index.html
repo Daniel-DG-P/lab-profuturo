@@ -2,142 +2,268 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nexora Lab - Laboratorio Virtual Interactivo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nexora Lab - Laboratorio Científico Interactivo</title>
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#202832">
+    <meta name="theme-color" content="#1a222d">
 </head>
 <body>
     <div class="container">
         <!-- HEADER -->
         <header>
-            <h1>Nexora Lab</h1>
-            <p>Laboratorio científico interactivo con método científico e IA híbrida</p>
-            <div id="estado-red" class="badge offline">Modo Sin Conexión (IA Local)</div>
+            <div class="header-content">
+                <h1>Nexora Lab</h1>
+                <p class="subtitle">Laboratorio Experimental Accesible & IA Híbrida</p>
+                <div class="badges-row">
+                    <span id="estado-red" class="badge offline">Modo Sin Conexión (IA Local)</span>
+                    <span id="sensor-badge" class="badge sensor-off">Sensores: Touch / Virtual</span>
+                </div>
+            </div>
+            <!-- Configuración opcional de API Key para IA Global -->
+            <button id="btn-config" class="btn-icon" onclick="toggleModalConfig()" title="Configurar IA Global">⚙️</button>
         </header>
+
+        <!-- MODAL DE CONFIGURACIÓN DE IA NUBE -->
+        <div id="modal-config" class="modal hidden">
+            <div class="modal-content card">
+                <h3>Configuración de IA Global (Nube)</h3>
+                <p class="text-sm">Si tienes conexión y una clave gratuita de Google Gemini, puedes ingresarla aquí para obtener evaluaciones pedagógicas de nivel superior. Si se deja en blanco o estás sin conexión, el motor local operará de forma autónoma.</p>
+                <input type="password" id="input-api-key" class="input-text" placeholder="Pega tu Gemini API Key (Opcional)">
+                <div class="modal-buttons">
+                    <button class="btn success" onclick="guardarApiKey()">Guardar</button>
+                    <button class="btn secondary" onclick="toggleModalConfig()">Cerrar</button>
+                </div>
+            </div>
+        </div>
 
         <!-- VISTA 1: SELECCIÓN DE NIVEL -->
         <section id="menu-niveles" class="card">
-            <h2>Selecciona tu Nivel Educativo</h2>
-            <button class="btn" onclick="seleccionarNivel('Secundaria')">Secundaria</button>
-            <button class="btn" onclick="seleccionarNivel('Preparatoria')">Preparatoria</button>
+            <h2>Selecciona tu Nivel Académico</h2>
+            <p>Experimentos calibrados para planes de estudio de ciencias formativas.</p>
+            <div class="grid-buttons">
+                <button class="btn level-btn" onclick="seleccionarNivel('Secundaria')">
+                    <span class="level-title">Nivel Secundaria</span>
+                    <span class="level-desc">Fundamentos y exploración científica básica</span>
+                </button>
+                <button class="btn level-btn" onclick="seleccionarNivel('Preparatoria')">
+                    <span class="level-title">Nivel Preparatoria</span>
+                    <span class="level-desc">Análisis cuantitativo y variables avanzadas</span>
+                </button>
+            </div>
         </section>
 
         <!-- VISTA 2: SELECCIÓN DE MATERIA Y TEMA -->
         <section id="menu-materias" class="card hidden">
-            <h2 id="titulo-nivel">Temarios</h2>
-            <button class="btn secondary" onclick="volverMenuNiveles()">← Cambiar Nivel</button>
+            <div class="flex-between">
+                <h2 id="titulo-nivel">Temarios</h2>
+                <button class="btn secondary sm" onclick="volverMenuNiveles()">← Cambiar</button>
+            </div>
             
-            <div class="form-group" style="margin-top: 15px;">
-                <label>Selecciona la Materia:</label>
-                <select id="select-materia" class="btn select-custom" onchange="cargarTemasMateria()">
+            <div class="form-group">
+                <label for="select-materia">1. Selecciona la Disciplina:</label>
+                <select id="select-materia" class="select-custom" onchange="cargarTemasMateria()">
                     <option value="">-- Elige una materia --</option>
-                    <option value="Biologia">Biología</option>
-                    <option value="Fisica">Física</option>
-                    <option value="Quimica">Química</option>
+                    <option value="Fisica">Física (Cinemática & Fuerzas)</option>
+                    <option value="Quimica">Química (pH & Reacciones)</option>
+                    <option value="Biologia">Biología (Transporte Celular)</option>
                 </select>
             </div>
 
             <div class="form-group" style="margin-top: 15px;">
-                <label>Selecciona el Tema / Experimento:</label>
-                <select id="select-tema" class="btn select-custom">
+                <label for="select-tema">2. Selecciona el Experimento:</label>
+                <select id="select-tema" class="select-custom" onchange="actualizarInfoTema()">
                     <option value="">-- Primero elige una materia --</option>
                 </select>
-                <button class="btn" style="margin-top: 15px;" onclick="iniciarLaboratorio()">Iniciar Laboratorio guiado</button>
+            </div>
+
+            <div id="tema-info-card" class="tema-preview hidden">
+                <p id="tema-preview-desc"></p>
+                <button class="btn success" onclick="iniciarLaboratorio()">Entrar al Laboratorio Experimental →</button>
             </div>
         </section>
 
         <!-- VISTA 3: LABORATORIO Y MÉTODO CIENTÍFICO (7 PASOS) -->
         <section id="vista-laboratorio" class="card hidden">
-            <button class="btn secondary" onclick="volverAMaterias()">← Volver a Temas</button>
-            <h2 id="lab-titulo-tema" style="margin-top: 10px; color: #526D82;">Nombre del Experimento</h2>
+            <div class="lab-header">
+                <button class="btn secondary sm" onclick="volverAMaterias()">← Temario</button>
+                <span id="lab-materia-tag" class="tag">Materia</span>
+            </div>
+            <h2 id="lab-titulo-tema">Experimento</h2>
 
-            <!-- Barra de Progreso de Pasos -->
+            <!-- Barra de Progreso -->
             <div class="progress-bar-container">
                 <div id="progress-bar" class="progress-bar"></div>
             </div>
-            <p id="paso-indicador" style="font-size: 0.9rem; margin-bottom: 15px; text-align: right;">Paso 1 de 7</p>
+            <div class="step-counter" id="paso-indicador">Paso 1 de 7: Observación</div>
 
-            <!-- CONTENEDOR DE LOS 7 PASOS -->
+            <!-- CONTENEDOR DE PASOS -->
             <div id="contenedor-pasos">
                 
                 <!-- PASO 1: Observación -->
                 <div class="step-pane" data-paso="1">
-                    <h3>1. Observación</h3>
-                    <p id="obs-texto">Examina con atención el fenómeno o simulación interactiva.</p>
-                    <div class="interactivo-box" id="interactivo-obs"></div>
-                    <textarea placeholder="Registra lo que observas detalladamente..."></textarea>
-                    <button class="btn" onclick="cambiarPaso(2)">Siguiente: Planteamiento del Problema</button>
+                    <h3>1. Observación Fenomenológica</h3>
+                    <p id="obs-texto" class="instruction">Observa con detenimiento la simulación preliminar.</p>
+                    
+                    <div class="canvas-container">
+                        <canvas id="canvas-obs" width="560" height="260"></canvas>
+                    </div>
+
+                    <label class="field-label">Registra tus observaciones iniciales:</label>
+                    <textarea id="input-observacion" placeholder="Describe qué patrones notas, qué elementos interactúan y qué comportamientos cambian..."></textarea>
+                    
+                    <button class="btn" onclick="validarYPasar(1, 2)">Siguiente: Formular Problema →</button>
                 </div>
 
                 <!-- PASO 2: Planteamiento del Problema -->
                 <div class="step-pane hidden" data-paso="2">
                     <h3>2. Planteamiento del Problema</h3>
-                    <p>Formula una pregunta clara y precisa sobre lo observado.</p>
-                    <input type="text" id="input-problema" class="input-text" placeholder="Ej: ¿Cómo afecta la variable X al sistema Y?">
-                    <button class="btn secondary" onclick="cambiarPaso(1)">Anterior</button>
-                    <button class="btn" onclick="cambiarPaso(3)">Siguiente: Hipótesis</button>
+                    <p class="instruction">Plantea una pregunta de investigación científica basada en tu observación previa.</p>
+                    
+                    <div class="tip-box">
+                        💡 <b>Consejo:</b> Una buena pregunta investiga la relación de causa y efecto. Ej: <i>¿Cómo incide [variable X] en [variable Y]?</i>
+                    </div>
+
+                    <label class="field-label">Pregunta de investigación:</label>
+                    <input type="text" id="input-problema" class="input-text" placeholder="Ej: ¿De qué manera la masa influye en la distancia alcanzada?">
+                    
+                    <div class="button-group">
+                        <button class="btn secondary" onclick="cambiarPaso(1)">← Anterior</button>
+                        <button class="btn" onclick="validarYPasar(2, 3)">Siguiente: Hipótesis →</button>
+                    </div>
                 </div>
 
                 <!-- PASO 3: Formulación de la Hipótesis -->
                 <div class="step-pane hidden" data-paso="3">
                     <h3>3. Formulación de la Hipótesis</h3>
-                    <p>Propón una posible explicación o respuesta tentativa que pueda ponerse a prueba.</p>
-                    <textarea id="input-hipotesis" placeholder="Si hacemos [esto], entonces [pasará esto] porque..."></textarea>
-                    <button class="btn secondary" onclick="cambiarPaso(2)">Anterior</button>
-                    <button class="btn" onclick="cambiarPaso(4)">Siguiente: Experimentación</button>
+                    <p class="instruction">Propón una explicación tentativa sujeta a comprobación empírica.</p>
+                    
+                    <div class="tip-box">
+                        💡 <b>Criterio científico:</b> Estructura recomendada: <i>"Si [hacemos esta modificación], entonces [este resultado ocurrirá] porque [justificación física/química]."</i>
+                    </div>
+
+                    <label class="field-label">Tu hipótesis predictiva:</label>
+                    <textarea id="input-hipotesis" placeholder="Si aumentamos la fuerza neta aplicada, entonces la aceleración será directamente proporcional porque..."></textarea>
+                    
+                    <div class="button-group">
+                        <button class="btn secondary" onclick="cambiarPaso(2)">← Anterior</button>
+                        <button class="btn" onclick="validarYPasar(3, 4)">Siguiente: Experimentación Virtual →</button>
+                    </div>
                 </div>
 
                 <!-- PASO 4: Experimentación -->
                 <div class="step-pane hidden" data-paso="4">
-                    <h3>4. Experimentación</h3>
-                    <p>Interactúa con los controles virtuales para ejecutar la prueba controlada.</p>
-                    <div class="interactivo-box" id="interactivo-exp">
-                        <!-- Simulación dinámica según el tema -->
+                    <h3>4. Experimentación Interactiva y Sensores</h3>
+                    <p class="instruction">Modifica las variables independientes y recopila los datos generados por la simulación.</p>
+                    
+                    <div class="canvas-container">
+                        <canvas id="canvas-exp" width="560" height="280"></canvas>
                     </div>
-                    <button class="btn secondary" onclick="cambiarPaso(3)">Anterior</button>
-                    <button class="btn" onclick="cambiarPaso(5)">Siguiente: Análisis de Datos</button>
+
+                    <!-- Panel de Controles Dinámicos -->
+                    <div id="sim-controles" class="sim-controls-panel">
+                        <!-- Generado dinámicamente según experimento -->
+                    </div>
+
+                    <!-- Botón de Sensor de Móvil si existe -->
+                    <div id="sensor-activador-box" class="sensor-box hidden">
+                        <button class="btn secondary sm" onclick="solicitarPermisoSensores()">📲 Conectar acelerómetro del teléfono</button>
+                    </div>
+
+                    <div class="button-group" style="margin-top: 15px;">
+                        <button class="btn secondary" onclick="cambiarPaso(3)">← Anterior</button>
+                        <button class="btn" onclick="cambiarPaso(5)">Siguiente: Análisis de Datos →</button>
+                    </div>
                 </div>
 
                 <!-- PASO 5: Análisis de Datos -->
                 <div class="step-pane hidden" data-paso="5">
-                    <h3>5. Análisis de Datos</h3>
-                    <p>Examina los resultados obtenidos y regístralos.</p>
-                    <div id="resultado-datos" class="sim-output">Valores registrados en tiempo real...</div>
-                    <textarea placeholder="Escribe tu análisis e interpretación de las mediciones..."></textarea>
-                    <button class="btn secondary" onclick="cambiarPaso(4)">Anterior</button>
-                    <button class="btn" onclick="cambiarPaso(6)">Siguiente: Conclusión</button>
+                    <h3>5. Análisis e Interpretación de Datos</h3>
+                    <p class="instruction">Analiza el registro de datos recopilados durante tus ensayos:</p>
+
+                    <!-- Tabla de registro de datos del laboratorio -->
+                    <div class="table-container">
+                        <table id="tabla-datos" class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Ensayo</th>
+                                    <th>Variable Entrada (X)</th>
+                                    <th>Respuesta Medida (Y)</th>
+                                    <th>Estado / Observación</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-cuerpo">
+                                <tr><td colspan="4" style="text-align:center;">Ejecuta experimentos en el paso 4 para poblar la tabla.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <label class="field-label">Interpretación cuantitativa de los resultados:</label>
+                    <textarea id="input-analisis" placeholder="Analiza si existe una relación lineal, exponencial o inversa entre las variables..."></textarea>
+                    
+                    <div class="button-group">
+                        <button class="btn secondary" onclick="cambiarPaso(4)">← Anterior</button>
+                        <button class="btn" onclick="validarYPasar(5, 6)">Siguiente: Conclusión →</button>
+                    </div>
                 </div>
 
                 <!-- PASO 6: Conclusión -->
                 <div class="step-pane hidden" data-paso="6">
-                    <h3>6. Conclusión</h3>
-                    <p>Determina si los datos respaldan tu hipótesis inicial o si debe plantearse una nueva.</p>
-                    <textarea placeholder="¿Se valida la hipótesis? Justifica tu respuesta..."></textarea>
-                    <button class="btn secondary" onclick="cambiarPaso(5)">Anterior</button>
-                    <button class="btn" onclick="cambiarPaso(7)">Siguiente: Comunicación</button>
+                    <h3>6. Conclusión y Verificación de Hipótesis</h3>
+                    <p class="instruction">Contrasta los datos experimentales con tu hipótesis formulada en el Paso 3.</p>
+
+                    <div class="hipotesis-recordatorio" id="recordatorio-hipotesis">
+                        <b>Tu hipótesis inicial fue:</b> <i>"..."</i>
+                    </div>
+
+                    <label class="field-label">¿Tu hipótesis fue aceptada o refutada? Explica los fundamentos:</label>
+                    <textarea id="input-conclusion" placeholder="Sobre la base de los datos recolectados, la hipótesis se [valida/refuta] debido a que..."></textarea>
+                    
+                    <div class="button-group">
+                        <button class="btn secondary" onclick="cambiarPaso(5)">← Anterior</button>
+                        <button class="btn" onclick="validarYPasar(6, 7)">Siguiente: Comunicación →</button>
+                    </div>
                 </div>
 
                 <!-- PASO 7: Comunicación de Resultados -->
                 <div class="step-pane hidden" data-paso="7">
-                    <h3>7. Comunicación de Resultados</h3>
-                    <p>Prepara tu reporte para compartirlo con la comunidad científica.</p>
-                    <textarea placeholder="Resumen del descubrimiento para publicación..."></textarea>
-                    <button class="btn secondary" onclick="cambiarPaso(6)">Anterior</button>
-                    <button class="btn success" onclick="evaluarMetodoCientifico()">Finalizar y Evaluar Método</button>
+                    <h3>7. Divulgación y Comunicación Científica</h3>
+                    <p class="instruction">Sintetiza tus hallazgos en un abstract o informe breve dirigido a la comunidad académica.</p>
+
+                    <label class="field-label">Resumen ejecutivo del experimento:</label>
+                    <textarea id="input-comunicacion" placeholder="El objetivo de esta investigación fue evaluar... Los resultados evidenciaron que... Concluyendo que..."></textarea>
+                    
+                    <div class="button-group">
+                        <button class="btn secondary" onclick="cambiarPaso(6)">← Anterior</button>
+                        <button class="btn success" id="btn-evaluar" onclick="ejecutarEvaluacionHibrida()">
+                            🔬 Finalizar y Evaluar con IA Híbrida
+                        </button>
+                    </div>
                 </div>
 
             </div>
         </section>
 
-        <!-- VISTA 4: EVALUACIÓN FINAL DEL MÉTODO CIENTÍFICO -->
+        <!-- VISTA 4: EVALUACIÓN POR IA HÍBRIDA -->
         <section id="vista-evaluacion" class="card hidden">
-            <h2>Evaluación del Método Científico</h2>
-            <div id="reporte-evaluacion" style="margin: 15px 0; line-height: 1.6;">
-                <!-- Aquí la IA local/global arroja el dictamen -->
+            <div class="flex-between">
+                <h2>Dictamen del Método Científico</h2>
+                <span id="eval-motor-badge" class="badge">IA Local</span>
             </div>
-            <button class="btn" onclick="location.reload()">Regresar al Menú Principal</button>
+
+            <div id="eval-loading" class="loading-state hidden">
+                <div class="spinner"></div>
+                <p>Analizando rigor metodológico, coherencia causal y análisis empírico...</p>
+            </div>
+
+            <div id="eval-resultado" class="eval-body">
+                <!-- Inyección del análisis del estudiante -->
+            </div>
+
+            <div class="button-group" style="margin-top: 25px;">
+                <button class="btn secondary" onclick="reintentarConPasoActual()">Revisar mis respuestas</button>
+                <button class="btn" onclick="reiniciarTodo()">Realizar otro experimento</button>
+            </div>
         </section>
     </div>
 
@@ -146,22 +272,11 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('sw.js')
-            .then(() => console.log("Service Worker registrado con éxito"))
-            .catch(err => console.log("Fallo al registrar Service Worker", err));
+          navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('SW activo en:', reg.scope))
+            .catch(err => console.error('Fallo en Service Worker:', err));
         });
       }
     </script>
-    <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js', { scope: '/' })
-        .then(reg => {
-          console.log("Service Worker activo en scope:", reg.scope);
-        })
-        .catch(err => console.error("Error al registrar SW:", err));
-    });
-  }
-</script>
 </body>
 </html>
